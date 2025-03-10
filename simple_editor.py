@@ -35,6 +35,20 @@ def save_to_file():
             file.write(text_content)
         print(f"File saved: {file_path}")
         
+def open_file():
+    """Opens a text file and loads its content into the input box."""
+    file_path = filedialog.askopenfilename(
+        filetypes=[("Text Files", "*.txt"), ("All Files", "*.*")]
+    )
+    
+    if file_path:
+        with open(file_path, "r") as file:
+            content = file.read()
+        
+        # Load the content into the input box
+        input_box.delete("1.0", tk.END)
+        input_box.insert(tk.END, content)
+
 def enable_edit(event=None):
     """Enables editing when double-clicking the result box"""
     result_box.config(state=tk.NORMAL)
@@ -73,16 +87,26 @@ root.config(menu=menu_bar)
 
 # File Menu
 file_menu = tk.Menu(menu_bar, tearoff=0)
-file_menu.add_command(label="Open")  # Placeholder for future functionality
+file_menu.add_command(label="Open", command=open_file)  
 file_menu.add_command(label="Save", command=save_to_file)
 file_menu.add_separator()
 file_menu.add_command(label="Exit", command=exit_app)
 menu_bar.add_cascade(label="File", menu=file_menu)
 
+# Video Menu
+video_menu = tk.Menu(menu_bar, tearoff=0)
+video_menu.add_command(label="Video")
+menu_bar.add_cascade(label="Video", menu=video_menu)
+
 # Statistics Menu
 stats_menu = tk.Menu(menu_bar, tearoff=0)
 stats_menu.add_command(label="Show Statistics", command=show_statistics)
 menu_bar.add_cascade(label="Statistics", menu=stats_menu)
+
+# Report Menu
+report_menu = tk.Menu(menu_bar, tearoff=0)
+report_menu.add_command(label="Report")
+menu_bar.add_cascade(label="Report", menu=report_menu)
 
 # About Menu
 about_menu = tk.Menu(menu_bar, tearoff=0)
