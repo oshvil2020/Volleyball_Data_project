@@ -1,5 +1,9 @@
+import re
 import tkinter as tk
 from tkinter import filedialog, messagebox
+
+# Store players globally
+players = []
 
 class Attack:
     """Represents an attack action in volleyball."""
@@ -38,20 +42,29 @@ class Player:
         service_summary = "\n".join(str(s) for s in self.services) if self.services else "No services recorded"
         return f"Player #{self.player_number}\nAttacks:\n{attack_summary}\n\nServices:\n{service_summary}"
 
-def process_text(event=None):
-    """Splits the input text at the first '.' and updates the result box"""
-    text_content = input_box.get("1.0", tk.END).strip()  # Get input text
-    
-    if '.' in text_content:
-        first_part, second_part = text_content.split('.', 1)
-    else:
-        first_part = text_content
-        second_part = ""  # No '.' found
+def check_action(text):
+    """
+    Checks each part of the text. If after a player number there is 'a', prints 'attack' in the console.
+    """
+    pattern = r'\b\d+\s*a'  # Matches a number followed by 'a'
 
-    # Show result in the second text box
+    if re.search(pattern, text):
+        print("attack")
+
+def process_text(event=None):
+    """Splits the input text at every '.' and updates the result box"""
+    text_content = input_box.get("1.0", tk.END).strip()  # Get input text
+
+    parts = text_content.split('.')  # Split at every '.'
+
+    # Check each part for 'attack' condition
+    for part in parts:
+        check_action(part.strip())
+
+    # Update result box with all parts separated by newline
     result_box.config(state=tk.NORMAL)  # Enable editing to update content
     result_box.delete("1.0", tk.END)
-    result_box.insert(tk.END, f"{first_part.strip()}\n{second_part.strip()}")
+    result_box.insert(tk.END, "\n".join(part.strip() for part in parts))
     result_box.config(state=tk.DISABLED) 
 
 def update_result_box(content):
@@ -59,14 +72,6 @@ def update_result_box(content):
     result_box.config(state=tk.NORMAL)
     result_box.delete("1.0", tk.END)
     result_box.insert(tk.END, content)
-    result_box.config(state=tk.DISABLED)
-
-
-def update_result_box(first_part, second_part):
-    """Updates the result box with processed text"""
-    result_box.config(state=tk.NORMAL)
-    result_box.delete("1.0", tk.END)
-    result_box.insert(tk.END, f"{first_part.strip()}\n{second_part.strip()}")
     result_box.config(state=tk.DISABLED)
 
 def save_to_file():
@@ -86,6 +91,22 @@ def save_to_file():
         with open(file_path, "w") as file:
             file.write(text_content)
         print(f"File saved: {file_path}")
+
+
+def open_file():
+    """Opens a text file and loads its content into the input box."""
+    file_path = filedialog.askopenfilename(
+        filetypes=[("Text Files", "*.txt"), ("All Files", "*.*")]
+    )
+
+    if file_path:  # If a file was selected
+        with open(file_path, "r") as file:
+            content = file.read()
+
+        result_box.config(state=tk.NORMAL)  # Enable editing before updating content
+        result_box.delete("1.0", tk.END)  # Clear previous content
+        result_box.insert(tk.END, content)  # Load new content
+        result_box.config(state=tk.DISABLED)
 
 def enable_edit(event=None):
     """Enables editing when double-clicking the result box"""
@@ -108,10 +129,15 @@ def show_about():
     """Displays the 'About' information"""
     messagebox.showinfo("About", "Volleyball Scouting & Analysis\nVersion 1.0\nAn open-source project for volleyball data analysis.")
 
-def show_statistics():
-    """Placeholder for statistics display"""
-    messagebox.showinfo("Statistics", "Feature under development.\nFuture updates will include player performance analytics.")
 
+def show_statistics():
+    """Displays player statistics in a message box."""
+    if not players:
+        messagebox.showinfo("Statistics", "No player data available.")
+        return
+
+    stats_text = "\n\n".join(player.toString() for player in players)
+    messagebox.showinfo("Player Statistics", stats_text)
 def exit_app():
     """Closes the application"""
     root.quit()
@@ -126,7 +152,7 @@ root.config(menu=menu_bar)
 
 # File Menu
 file_menu = tk.Menu(menu_bar, tearoff=0)
-file_menu.add_command(label="Open")  # Placeholder for future functionality
+file_menu.add_command(label="Open", command=open_file)
 file_menu.add_command(label="Save", command=save_to_file)
 file_menu.add_separator()
 file_menu.add_command(label="Exit", command=exit_app)
