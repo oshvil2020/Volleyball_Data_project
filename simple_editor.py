@@ -37,19 +37,44 @@ class Player:
     def add_service(self, result: str, service_type: str):
         self.services.append(Service(result, service_type))
 
+    # def __str__(self):
+    #     attack_summary = "\n".join(str(a) for a in self.attacks) if self.attacks else "No attacks recorded"
+    #     service_summary = "\n".join(str(s) for s in self.services) if self.services else "No services recorded"
+    #     return f"Player #{self.player_number}\nAttacks:\n{attack_summary}\n\nServices:\n{service_summary}"
+
     def __str__(self):
+        return self.to_string()  # Update __str__ to use new method name
+
+    def to_string(self):
+        """Returns a formatted string of player details."""
         attack_summary = "\n".join(str(a) for a in self.attacks) if self.attacks else "No attacks recorded"
         service_summary = "\n".join(str(s) for s in self.services) if self.services else "No services recorded"
         return f"Player #{self.player_number}\nAttacks:\n{attack_summary}\n\nServices:\n{service_summary}"
 
 def check_action(text):
     """
-    Checks each part of the text. If after a player number there is 'a', prints 'attack' in the console.
+    Checks each part of the text. If after a player number there is 'a', adds an attack to the corresponding player.
     """
-    pattern = r'\b\d+\s*a'  # Matches a number followed by 'a'
+    pattern = r'\b(\d+)\s*a'  # Matches a number followed by 'a' (captures the number)
 
-    if re.search(pattern, text):
-        print("attack")
+    match = re.search(pattern, text)
+    if not match:  # Check if match is None before accessing it
+        return
+
+    player_number = int(match.group(1))  # Extract player number
+    print(f"attack detected for Player #{player_number}")
+
+    # Find the player or create a new one
+    player = next((p for p in players if p.player_number == player_number), None)
+
+    if player is None:
+        print(f"Creating new player: #{player_number}")
+        player = Player(player_number)
+        players.append(player)
+
+    # Add an attack (default values for now)
+    player.add_attack(result="Point", block_number=1, attack_type="Spike")
+    print(f"Attack added to Player #{player_number}")
 
 def process_text(event=None):
     """Splits the input text at every '.' and updates the result box"""
@@ -136,7 +161,7 @@ def show_statistics():
         messagebox.showinfo("Statistics", "No player data available.")
         return
 
-    stats_text = "\n\n".join(player.toString() for player in players)
+    stats_text = "\n\n".join(player.to_string() for player in players)
     messagebox.showinfo("Player Statistics", stats_text)
 def exit_app():
     """Closes the application"""
