@@ -1,9 +1,40 @@
 import re
 import tkinter as tk
-from tkinter import filedialog, messagebox
+import tkinter as tk
+from tkinter import ttk, filedialog, messagebox
 
 # Store players globally
 players = []
+
+class Receive:
+    """Represents a receive action in volleyball."""
+    def __init__(self, result: str, receive_type: str):
+        self.result = result
+        self.receive_type = receive_type
+
+    def __str__(self):
+        return f"Receive: {self.receive_type} | Result: {self.result}"
+
+
+class Block:
+    """Represents a block action in volleyball."""
+    def __init__(self, result: str, block_number: int):
+        self.result = result
+        self.block_number = block_number
+
+    def __str__(self):
+        return f"Block | Result: {self.result} | Blockers: {self.block_number}"
+
+
+class Pass:
+    """Represents a pass action in volleyball."""
+    def __init__(self, result: str, pass_type: str):
+        self.result = result
+        self.pass_type = pass_type
+
+    def __str__(self):
+        return f"Pass: {self.pass_type} | Result: {self.result}"
+
 
 class Attack:
     """Represents an attack action in volleyball."""
@@ -25,11 +56,14 @@ class Service:
         return f"Service: {self.service_type} | Result: {self.result}"
 
 class Player:
-    """Represents a volleyball player with attack and service stats."""
+    """Represents a volleyball player with attack, service, block, receive, and pass stats."""
     def __init__(self, player_number: int):
         self.player_number = player_number
         self.attacks = []
         self.services = []
+        self.blocks = []
+        self.receives = []
+        self.passes = []
 
     def add_attack(self, result: str, block_number: int, attack_type: str):
         self.attacks.append(Attack(result, block_number, attack_type))
@@ -37,60 +71,104 @@ class Player:
     def add_service(self, result: str, service_type: str):
         self.services.append(Service(result, service_type))
 
-    # def __str__(self):
-    #     attack_summary = "\n".join(str(a) for a in self.attacks) if self.attacks else "No attacks recorded"
-    #     service_summary = "\n".join(str(s) for s in self.services) if self.services else "No services recorded"
-    #     return f"Player #{self.player_number}\nAttacks:\n{attack_summary}\n\nServices:\n{service_summary}"
+    def add_receive(self, result: str, receive_type: str):
+        self.receives.append(Receive(result, receive_type))
+
+    def add_block(self, result: str, block_number: int):
+        self.blocks.append(Block(result, block_number))
+
+    def add_pass(self, result: str, pass_type: str):
+        self.passes.append(Pass(result, pass_type))
 
     def __str__(self):
-        return self.to_string()  # Update __str__ to use new method name
-
-    def to_string(self):
         """Returns a formatted string of player details."""
         attack_summary = "\n".join(str(a) for a in self.attacks) if self.attacks else "No attacks recorded"
         service_summary = "\n".join(str(s) for s in self.services) if self.services else "No services recorded"
-        return f"Player #{self.player_number}\nAttacks:\n{attack_summary}\n\nServices:\n{service_summary}"
+        block_summary = "\n".join(str(b) for b in self.blocks) if self.blocks else "No blocks recorded"
+        receive_summary = "\n".join(str(r) for r in self.receives) if self.receives else "No receives recorded"
+        pass_summary = "\n".join(str(p) for p in self.passes) if self.passes else "No passes recorded"
+
+        return (
+            f"Player #{self.player_number}\n"
+            f"Attacks:\n{attack_summary}\n\n"
+            f"Services:\n{service_summary}\n\n"
+            f"Blocks:\n{block_summary}\n\n"
+            f"Receives:\n{receive_summary}\n\n"
+            f"Passes:\n{pass_summary}"
+        )
 
 def check_action(text):
     """
-    Checks each part of the text. If after a player number there is 'a', adds an attack to the corresponding player.
+    Checks each part of the text and assigns the correct volleyball action.
+    - 'a' → Attack
+    - 's' → Service
+    - 'b' → Block
+    - 'r' → Receive
+    - 'p' → Pass
     """
-    pattern = r'\b(\d+)\s*a'  # Matches a number followed by 'a' (captures the number)
+    pattern = r'\b(\d+)\s*([asbrp])'  # Matches a number followed by 'a', 's', 'b', 'r', or 'p'
+    matches = re.findall(pattern, text)
 
-    match = re.search(pattern, text)
-    if not match:  # Check if match is None before accessing it
-        return
+    for match in matches:
+        player_number = int(match[0])
+        action_type = match[1]  # 'a', 's', 'b', 'r', or 'p'
 
-    player_number = int(match.group(1))  # Extract player number
-    print(f"attack detected for Player #{player_number}")
+        # Find the player, or create a new one if not found
+        player = next((p for p in players if p.player_number == player_number), None)
+        if player is None:
+            print(f"Creating new player: #{player_number}")
+            player = Player(player_number)
+            players.append(player)
 
-    # Find the player or create a new one
-    player = next((p for p in players if p.player_number == player_number), None)
+        # Avoid duplicate entries by checking last added action
+        if action_type == 'a' and (not player.attacks or player.attacks[-1].attack_type != "Spike"):
+            print(f"Attack detected for Player #{player_number}")
+            player.add_attack(result="Point", block_number=1, attack_type="Spike")
+            print(f"Attack added to Player #{player_number}")
 
-    if player is None:
-        print(f"Creating new player: #{player_number}")
-        player = Player(player_number)
-        players.append(player)
+        elif action_type == 's' and (not player.services or player.services[-1].service_type != "Jump Serve"):
+            print(f"Service detected for Player #{player_number}")
+            player.add_service(result="Ace", service_type="Jump Serve")
+            print(f"Service added to Player #{player_number}")
 
-    # Add an attack (default values for now)
-    player.add_attack(result="Point", block_number=1, attack_type="Spike")
-    print(f"Attack added to Player #{player_number}")
+        elif action_type == 'b' and (not player.blocks or player.blocks[-1].block_number != 2):
+            print(f"Block detected for Player #{player_number}")
+            player.add_block(result="Successful", block_number=2)
+            print(f"Block added to Player #{player_number}")
+
+        elif action_type == 'r' and (not player.receives or player.receives[-1].receive_type != "Forearm Pass"):
+            print(f"Receive detected for Player #{player_number}")
+            player.add_receive(result="Perfect", receive_type="Forearm Pass")
+            print(f"Receive added to Player #{player_number}")
+
+        elif action_type == 'p' and (not player.passes or player.passes[-1].pass_type != "Overhead Set"):
+            print(f"Pass detected for Player #{player_number}")
+            player.add_pass(result="Accurate", pass_type="Overhead Set")
+            print(f"Pass added to Player #{player_number}")
 
 def process_text(event=None):
-    """Splits the input text at every '.' and updates the result box"""
-    text_content = input_box.get("1.0", tk.END).strip()  # Get input text
+    """Splits the input text at every '.' and updates the result box only once."""
+    text_content = input_box.get("1.0", tk.END).strip()
 
-    parts = text_content.split('.')  # Split at every '.'
+    if not text_content:
+        return
 
-    # Check each part for 'attack' condition
+    parts = text_content.split('.')
+
+    processed_parts = set()
+
     for part in parts:
-        check_action(part.strip())
+        cleaned_part = part.strip()
+        if cleaned_part and cleaned_part not in processed_parts:
+            check_action(cleaned_part)
+            processed_parts.add(cleaned_part)
 
-    # Update result box with all parts separated by newline
-    result_box.config(state=tk.NORMAL)  # Enable editing to update content
+    # Update result box
+    result_box.config(state=tk.NORMAL)  
     result_box.delete("1.0", tk.END)
-    result_box.insert(tk.END, "\n".join(part.strip() for part in parts))
-    result_box.config(state=tk.DISABLED) 
+    result_box.insert(tk.END, "\n".join(parts))
+    result_box.config(state=tk.DISABLED)
+
 
 def update_result_box(content):
     """Updates the result box with processed text"""
@@ -128,9 +206,9 @@ def open_file():
         with open(file_path, "r") as file:
             content = file.read()
 
-        result_box.config(state=tk.NORMAL)  # Enable editing before updating content
-        result_box.delete("1.0", tk.END)  # Clear previous content
-        result_box.insert(tk.END, content)  # Load new content
+        result_box.config(state=tk.NORMAL)
+        result_box.delete("1.0", tk.END)
+        result_box.insert(tk.END, content)
         result_box.config(state=tk.DISABLED)
 
 def enable_edit(event=None):
@@ -156,13 +234,50 @@ def show_about():
 
 
 def show_statistics():
-    """Displays player statistics in a message box."""
+    """Displays player statistics in a table format using a Tkinter window."""
     if not players:
         messagebox.showinfo("Statistics", "No player data available.")
         return
 
-    stats_text = "\n\n".join(player.to_string() for player in players)
-    messagebox.showinfo("Player Statistics", stats_text)
+    # Create a new window for displaying stats
+    stats_window = tk.Toplevel()
+    stats_window.title("Player Statistics")
+    stats_window.geometry("600x400")
+
+    # Create a Treeview table
+    columns = ("Player", "Service", "Receive", "Attack", "Block", "Pass")
+    tree = ttk.Treeview(stats_window, columns=columns, show="headings")
+
+    # Define column headings
+    for col in columns:
+        tree.heading(col, text=col)
+        tree.column(col, width=100, anchor="center")  # Adjust width
+
+    # Insert player data into the table
+    for player in players:
+        services_count = len(player.services)
+        receives_count = len(player.receives)
+        attacks_count = len(player.attacks)
+        blocks_count = len(player.blocks)
+        passes_count = len(player.passes)
+
+        print(f"Player {player.player_number}: Services={services_count}, Receives={receives_count}, Attacks={attacks_count}, Blocks={blocks_count}, Passes={passes_count}")
+
+        tree.insert("", tk.END, values=(
+            player.player_number,
+            services_count,
+            receives_count,
+            attacks_count,
+            blocks_count,
+            passes_count
+        ))
+
+    tree.pack(expand=True, fill="both")
+
+    # Run the table window
+    stats_window.mainloop()
+
+
 def exit_app():
     """Closes the application"""
     root.quit()
